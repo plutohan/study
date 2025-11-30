@@ -1,259 +1,326 @@
-# EasyRust Chapters 41-50
+# EasyRust Chapters 51-60
 
 Source: [EasyRust Playlist](https://www.youtube.com/playlist?list=PLfllocyHVgsSJf1zO6k6o3SX2mbZjAqYE)
 
+## Hashmap
 
-## Enum match
-
-
-`match` allows you to compare a value against a series of patterns and execute code based on which pattern matches. When used with Enums, it can destructure the variant to access the data inside.
+Collection of key and values
+Hash map no ordering
 
 ```rust
-enum AnimalType {
-    Cat(String),
-    Dog(String),
+struct City {
+    name: String,
+    population: HashMap<u32, u32>, // This will have the year and the population for the year
 }
 
 fn main() {
-    let my_animal = AnimalType::Cat(String::from("Fluffy"));
-    match my_animal {
-        AnimalType::Cat(name) => println!("The cat's name is {}", name),
-        _ => println!("It's not a cat"),
-    }
-}
-```
 
-
-### Destructuring
-```rust
-struct Person { // make a simple struct for a person
-    name: String,
-    real_name: String,
-    height: u8,
-    happiness: bool
-}
-
-struct Person2 {
-    name: String,
-    height: u8,
-}
-
-impl Person2 {
-    fn from_persion(input: Person) -> Self {
-        let Person {name, height, ..} = input; // destructure input
-        Self {
-            name,
-            height,
-        }
-    }
-}
-
-fn main() {
-    let papa_doc = Person { // create variable papa_doc
-        name: "Papa Doc".to_string(),
-        real_name: "Clarence".to_string(),
-        height: 170,
-        happiness: false
+    let mut tallinn = City {
+        name: "Tallinn".to_string(),
+        population: HashMap::new(), 
     };
 
-    let Person { // destructure papa_doc
-        name: a,
-        real_name: b,
-        height: c,
-        happiness: d
-    } = papa_doc;
+    tallinn.population.insert(1372, 3_250); // insert three dates
+    tallinn.population.insert(1851, 24_000);
+    tallinn.population.insert(2020, 437_619);
 
-    println!("They call him {} but his real name is {}. He is {} cm tall and is he happy? {}", a, b, c, d);
 
-    let person2 = Person2::from_persion(papa_doc);
-}
-```
-
-## Deref 
-
-The dot operator (.) performs auto-referencing, dereferencing and coercion until types match! 
-
-```rust
-struct Item {
-    number: u8,
-}
-
-impl Item {
-    fn compare_number(&self, other_number: u8) { // takes a reference to self
-        println!("Are {} and {} equal? {}", self.number, other_number, self.number == other_number);
-            // We don't need to write *self.number
+    for (year, population) in tallinn.population { // The HashMap is HashMap<u32, u32> so it returns a two items each time
+        println!("In the year {} the city of {} had a population of {}.", year, tallinn.name, population); // random order
     }
 }
 
-fn main() {
-    let item = Item {
-        number: 8,
-    };
-
-    let reference_item = &item; // This is type &Item
-    let reference_item_two = &reference_item; // This is type &&Item
-
-    item.compare_number(8); // the method works
-    reference_item.compare_number(8); // it works here too
-    reference_item_two.compare_number(8); // and here
-
-}
 ```
 
-## Generics
+BTreeMap is a little slower than Hashmap but has order.
+Else is almost the same.
 
-
-Generics allow you to write flexible definitions for functions and structs that can work with any type. You use a placeholder (like `T`) instead of a specific type.
+2 Ways to get values from HashMap:
 
 ```rust
-fn return_number<T>(number: T) -> T { // <T> is a must
-    println!("Here is your number.");
-    number
-}
-
-fn return_number(number: MyType) -> MyType { // Error
-    println!("Here is your number.");
-    number
-}
-
-fn print_number<T: Debug>(number: T) { // <T: Debug> is the important part
-    println!("Here is your number: {:?}", number);
-}
-
+    println!("{:?}", city_hashmap["Bielefeld"]); // Will panic if key doesn't exist
+    println!("{:?}", city_hashmap.get("Bielefeld")); // Returns Some or None
 ```
 
-### Trait Bounds
-You can restrict generics to types that implement specific traits. This ensures the type has the functionality you need (like printing or comparing).
 
+Hashmap  overwrites existing keys
 ```rust
-use std::fmt::Display;
-use std::cmp::PartialOrd;
-
-fn compare_and_display<T: Display, U: Display + PartialOrd>(statement: T, num_1: U, num_2: U) {
-    println!("{}! Is {} greater than {}? {}", statement, num_1, num_2, num_1 > num_2);
-}
-
-// the same as above
-fn compare_and_display<T, U>(statement: T, num_1: U, num_2: U)
-where
-    T: Display,
-    U: Display + PartialOrd,
-{
-    println!("{}! Is {} greater than {}? {}", statement, num_1, num_2, num_1 > num_2);
-}
-
+use std::collections::HashMap;
 
 fn main() {
-    compare_and_display("Listen up!", 9, 8);
+    let mut book_hashmap = HashMap::new();
+
+    book_hashmap.insert(1, "L'Allemagne Moderne");
+    book_hashmap.insert(1, "Le Petit Prince");
+    book_hashmap.insert(1, "섀도우 오브 유어 스마일");
+    book_hashmap.insert(1, "Eye of the World");
+
+    println!("{:?}", book_hashmap.get(&1)); // Pass ref. You don't want to pass ownership to hashmap
+    // Some("Eye of the World")
 }
 ```
 
-## Option
+### Why insert takes value but get takes reference?
 
-The `Option` enum is used when a value might be something or nothing. It replaces `null` in other languages. It has two variants: `Some(T)` (contains a value) and `None` (no value).
+*   **`insert`**: Takes ownership (or a copy) because the HashMap needs to store the key.
+*   **`get`**: Takes a reference because it only needs to look up the value. Taking ownership would consume the key.
 
-```rust 
-
-    // ⚠️
-fn take_fifth(value: Vec<i32>) -> i32 {
-    value[4]
-}
-
-fn main() {
-    let new_vec = vec![1, 2];
-    let index = take_fifth(new_vec); // panic!
-}
-
-
-```
-Panic means that the program stops before the problem happens. Rust sees that the function wants something impossible, and stops. It "unwinds the stack" (takes the values off the stack) and tells you "sorry, I can't do that".
-
+**Note**: `i32` is `Copy`, so passing `1` to `insert` copies it. For `String`, `insert` moves the value.
 
 ```rust
-// ⚠️
-fn take_fifth(value: Vec<i32>) -> Option<i32> {
-    if value.len() < 5 {
-        None
-    } else {
-        Some(value[4])
+// Example with non-Copy type (String)
+let mut map = HashMap::new();
+let key = String::from("My Key");
+
+map.insert(key, 10); // 'key' is moved into the map
+
+// println!("{}", key); // ⚠️ ERROR: value borrowed here after move
+```
+
+### Entry
+
+### Entry Method
+
+The `entry` method is a convenient way to check if a key exists in a `HashMap`. It returns an `Entry` enum, which is either `Occupied` or `Vacant`.
+
+```rust
+// Simplified view of the Entry enum
+enum Entry<K, V> {
+    Occupied(OccupiedEntry<K, V>),
+    Vacant(VacantEntry<K, V>),
+}
+```
+
+The `or_insert` method is often used with `entry`. It inserts a default value if the entry is `Vacant` and returns a mutable reference to the value (whether it was just inserted or already existed).
+
+```rust
+// Simplified view of or_insert
+fn or_insert(self, default: V) -> &mut V {
+    match self {
+        Occupied(entry) => entry.into_mut(),
+        Vacant(entry) => entry.insert(default),
     }
 }
+```
+
+Here is how you can use it to count occurrences of items:
+
+```rust
+use std::collections::HashMap;
 
 fn main() {
-    let new_vec = vec![1, 2];
-    let bigger_vec = vec![1, 2, 3, 4, 5];
-    println!("{:?}, {:?}",
-        take_fifth(new_vec).unwrap(), // this one is None. .unwrap() will panic!
-        take_fifth(bigger_vec).unwrap()
-    );
+    let book_collection = vec!["L'Allemagne Moderne", "Le Petit Prince", "Eye of the World", "Eye of the World"];
 
+    let mut book_hashmap = HashMap::new();
 
-// better way to handle None
-    match take_fifth(new_vec) {
-        Some(number) => println!("Here is your number: {}", number),
-        None => println!("There is no number here!"),
+    for book in book_collection {
+        let return_value = book_hashmap.entry(book).or_insert(0); // return_value is a mutable reference. If nothing is there, it will be 0
+        *return_value +=1; // Now return_value is at least 1. And if there was another book, it will go up by 1
     }
 
-// another way
-        let inside_number = take_fifth(vec);
-        inside_number.is_some() {
-            println!("Here is your number: {}", inside_number.unwrap());
-        }
-
-
+    for (book, number) in book_hashmap {
+        println!("{}, {}", book, number);
+        /* 
+            L'Allemagne Moderne, 1
+            Le Petit Prince, 1
+            Eye of the World, 2
+        */
+    }
 }
 ```
 
-## Result
-Result is similar to Option, but here is the difference:
-
-Option is about Some or None (value or no value),
-Result is about Ok or Err (okay result, or error result).
-So Option is if you are thinking: "Maybe there will be something, and maybe there won't." But Result is if you are thinking: "Maybe it will fail."
-
-
 ```rust
-
-fn check_if_five(number: i32) -> Result<i32, String> {
-    match number {
-        5 => Ok(number),
-        _ => Err("Sorry, the number wasn't five.".to_string()), // This is our error message
-    }
-}
+use std::collections::HashMap;
 
 fn main() {
-    let mut result_vec = Vec::new(); // Create a new vec for the results
-
-    for number in 2..7 {
-        result_vec.push(check_if_five(number)); // push each result into the vec
-    }
-
-    println!("{:?}", result_vec);
-}
-```
-
-### if let and while let
-`if let` is syntax sugar for a `match` that runs code only if the value matches a specific pattern.
-`while let` works like `if let` but for loops: it runs the loop body as long as the pattern matches.
-
-```rust
-fn main() {
-    let weather_vec = vec![
-        vec!["Berlin", "cloudy", "5", "-7", "78"],
-        vec!["Athens", "sunny", "not humid", "20", "10", "50"],
+    let data = vec![ // This is the raw data
+        ("male", 9),
+        ("female", 5),
+        ("male", 0),
+        ("female", 6),
+        ("female", 5),
+        ("male", 10),
     ];
-    for mut city in weather_vec {
-        println!("For the city of {}:", city[0]); // In our data, every first item is the city name
-        while let Some(information) = city.pop() {
-            // This means: keep going until you can't pop anymore
-            // When the vector reaches 0 items, it will return None
-            // and it will stop.
-            if let Ok(number) = information.parse::<i32>() {
-                // Try to parse the variable we called information
-                // This returns a result. If it's Ok(number), it will print it
-                println!("The number is: {}", number);
-            }  // We don't write anything here because we do nothing if we get an error. Throw them all away
+
+    let mut survey_hash = HashMap::new();
+
+    for item in data { // This gives a tuple of (&str, i32)
+    // or you can destructure it like this: (gender, number)
+        survey_hash.entry(item.0).or_insert(Vec::new()).push(item.1); 
+        // creates a new Vec if there is nothing there and pushes the number into it
+    }
+
+    for (male_or_female, numbers) in survey_hash {
+        println!("{:?}: {:?}", male_or_female, numbers);
+    }
+}
+
+```
+
+## HashSet
+
+## HashSet
+
+A `HashSet` is actually a `HashMap` that only has keys (no values). It is used when you want to know if something exists or not, and you don't want any duplicates.
+
+Example:
+
+```rust
+use std::collections::HashSet;
+
+fn main() {
+    let many_numbers = vec![
+        94, 42, 59, 64, 32, 22, 38, 5, 59, 49, 15, 89, 74, 29, 14, 68, 82, 80, 56, 41, 36, 81, 66,
+        51, 58, 34, 59, 44, 19, 93, 28, 33, 18, 46, 61, 76, 14, 87, 84, 73, 71, 29, 94, 10, 35, 20,
+        35, 80, 8, 43, 79, 25, 60, 26, 11, 37, 94, 32, 90, 51, 11, 28, 76, 16, 63, 95, 13, 60, 59,
+        96, 95, 55, 92, 28, 3, 17, 91, 36, 20, 24, 0, 86, 82, 58, 93, 68, 54, 80, 56, 22, 67, 82,
+        58, 64, 80, 16, 61, 57, 14, 11];
+
+    let mut number_hashset = HashSet::new();
+
+    for number in many_numbers {
+        number_hashset.insert(number);
+    }
+
+    let hashset_length = number_hashset.len(); // The length tells us how many numbers are in it
+    println!("There are {} unique numbers, so we are missing {}.", hashset_length, 100 - hashset_length);
+
+    // Let's see what numbers we are missing
+    let mut missing_vec = vec![];
+    for number in 0..100 {
+        if number_hashset.get(&number).is_none() { // If .get() returns None,
+            missing_vec.push(number);
         }
     }
+
+    print!("It does not contain: ");
+    for number in missing_vec {
+        print!("{} ", number);
+    }
+}
+```
+
+Use `BTreeSet` if you need the items to be ordered.
+
+## BinaryHeap
+
+A `BinaryHeap` is a collection that keeps the largest item at the front. It is not fully sorted, but it guarantees that when you `pop` an item, you always get the largest one.
+
+It is good for a **priority queue**.
+
+Example:
+
+```rust
+use std::collections::BinaryHeap;
+
+fn main() {
+    let mut jobs = BinaryHeap::new();
+
+    // Add jobs to do throughout the day
+    jobs.push((100, "Write back to email from the CEO"));
+    jobs.push((80, "Finish the report today"));
+    jobs.push((5, "Watch some YouTube"));
+    jobs.push((70, "Tell your team members thanks for always working hard"));
+    jobs.push((30, "Plan who to hire next for the team"));
+
+    while let Some(job) = jobs.pop() {
+        println!("You need to: {}", job.1);
+        // You need to: Write back to email from the CEO
+        // You need to: Finish the report today
+        // You need to: Tell your team members thanks for always working hard
+        // You need to: Plan who to hire next for the team
+        // You need to: Watch some YouTube
+    }
+
+}
+
+```
+
+## VecDeque
+
+If using Vec, removing the first item shifts all the other items to the left, which is slow.
+
+
+```rust
+use std::collections::VecDeque;
+
+fn main() {
+    let mut my_vec = VecDeque::from(vec![0; 600000]);
+    for i in 0..600000 {
+        my_vec.pop_front(); // pop_front is like .pop but for the front
+    }
+}
+```
+
+If you try to use a `Vec` for the above example, it would be very slow because removing from the front requires shifting all elements.
+
+## Question Mark Operator (?)
+
+The `?` operator is a shorter way to handle `Result` (and `Option`). It propagates the error (or `None`) if one occurs.
+
+If the value is `Ok`, it unwraps it and gives you the value. If it is `Err`, it returns the error from the function immediately.
+
+Example:
+
+```rust
+fn parse_str(input: &str) -> Result<i32, std::num::ParseIntError> { // Return type must be Result
+    let parsed_number = input.parse::<i32>()?; // If it fails, it will stop here and return the error
+    Ok(parsed_number)
+}
+
+fn parse_str(input: &str) -> Result<i32, ParseIntError> {
+    let parsed_number = input.parse::<u16>()?.to_string().parse::<u32>()?.to_string().parse::<i32>()?; // Add a ? each time to check and pass it on
+    Ok(parsed_number)
+}
+
+
+fn main() {
+    let str_vec = vec!["Seven", "8", "9.0", "nice", "6060"];
+    for item in str_vec {
+        let parsed = parse_str(item);
+        println!("{:?}", parsed);
+    }
+}
+```
+
+## Traits
+
+Traits are like interfaces in other languages. They define functionality that a type must provide.
+
+Example:
+
+```rust
+
+struct Animal { 
+    name: String,
+}
+
+trait Canine { // Like an interface or abstract class
+    fn bark(&self) ;
+
+    fn run(&self) { // Default implementation
+        println!("The dog is running!");
+    }
+}
+
+impl Canine for Animal {
+    // implement the trait
+    fn bark(&self) {
+        println!("Woof!");
+    }
+
+    // override the default implementation
+    fn run(&self) {
+        println!("My dog {} is running!", self.name);
+    }
+}
+
+fn main() {
+    let rover = Animal {
+        name: "Pappi".to_string(),
+    };
+
+    rover.bark(); // Now Animal can use bark()
+    rover.run();  // and it can use run()
 }
 ```
